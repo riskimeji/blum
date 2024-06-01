@@ -145,15 +145,19 @@ while True:
         print(f"\r{Fore.YELLOW+Style.BRIGHT}[Balance]: {balance_info['availableBalance']}", flush=True)
         print(f"{Fore.RED+Style.BRIGHT}[Tiket Game]: {balance_info['playPasses']}")
 
-        farming_info = balance_info['farming']
-        end_time_ms  = farming_info['endTime'] 
-        end_time_s = end_time_ms / 1000.0
-        end_utc_date_time = datetime.datetime.fromtimestamp(end_time_s, datetime.timezone.utc)
-        current_utc_time = datetime.datetime.now(datetime.timezone.utc)
-        time_difference = end_utc_date_time - current_utc_time
-        hours_remaining = int(time_difference.total_seconds() // 3600)
-        minutes_remaining = int((time_difference.total_seconds() % 3600) // 60)
-        print(f"Waktu Claim: {hours_remaining} jam {minutes_remaining} menit | Balance: {farming_info['balance']}")
+        # Periksa apakah 'farming' ada dalam balance_info sebelum mengaksesnya
+        farming_info = balance_info.get('farming')
+        if farming_info:
+            end_time_ms = farming_info['endTime']
+            end_time_s = end_time_ms / 1000.0
+            end_utc_date_time = datetime.datetime.fromtimestamp(end_time_s, datetime.timezone.utc)
+            current_utc_time = datetime.datetime.now(datetime.timezone.utc)
+            time_difference = end_utc_date_time - current_utc_time
+            hours_remaining = int(time_difference.total_seconds() // 3600)
+            minutes_remaining = int((time_difference.total_seconds() % 3600) // 60)
+            print(f"Waktu Claim: {hours_remaining} jam {minutes_remaining} menit | Balance: {farming_info['balance']}")
+        else:
+            print(f"{Fore.RED+Style.BRIGHT}Informasi farming tidak tersedia")
         # cek daily 
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking daily reward...", end="", flush=True)
         daily_reward_response = check_daily_reward(token)
