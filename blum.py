@@ -157,11 +157,16 @@ while True:
         # cek daily 
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking daily reward...", end="", flush=True)
         daily_reward_response = check_daily_reward(token)
+
+        if daily_reward_response is None:
+            print(f"\r{Fore.RED+Style.BRIGHT}Gagal cek hadiah harian, mencoba lagi...", flush=True)
+        else:
+            if daily_reward_response['message'] == 'same day':
+                print(f"\r{Fore.RED+Style.BRIGHT}Hadiah harian sudah diklaim hari ini", flush=True)
+            elif daily_reward_response['message'] == 'OK':
+                print(f"\r{Fore.GREEN+Style.BRIGHT}Hadiah harian berhasil diklaim!", flush=True)
         # print(daily_reward_response)
-        if daily_reward_response['message'] == 'same day':
-            print(f"\r{Fore.RED+Style.BRIGHT}Hadiah harian sudah diklaim hari ini", flush=True)
-        elif daily_reward_response['message'] == 'OK':
-            print(f"\r{Fore.GREEN+Style.BRIGHT}Hadiah harian berhasil diklaim!", flush=True)
+    
         if hours_remaining < 0:
 
 
