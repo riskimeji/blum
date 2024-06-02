@@ -243,16 +243,19 @@ while True:
                     print(f"{Fore.GREEN+Style.BRIGHT}Sukses claim total: {claimed_amount}", flush=True)
                 else:
                     print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo ref", flush=True)
-
             else:
-                claim_time = datetime.datetime.fromtimestamp(int(friend_balance['canClaimAt']) / 1000)
-                current_time = datetime.datetime.now()
-                time_diff = claim_time - current_time
-                hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
-                minutes, seconds = divmod(remainder, 60)
-                print(f"{Fore.RED+Style.BRIGHT}\rReff Balance: Klaim pada {hours} jam {minutes} menit lagi", flush=True)
+                if friend_balance['canClaimAt']:
+                    claim_time = datetime.datetime.fromtimestamp(int(friend_balance['canClaimAt']) / 1000)
+                    current_time = datetime.datetime.now()
+                    time_diff = claim_time - current_time
+                    hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
+                    minutes, seconds = divmod(remainder, 60)
+                    print(f"{Fore.RED+Style.BRIGHT}\rReff Balance: Klaim pada {hours} jam {minutes} menit lagi", flush=True)
+                else:
+                    print(f"{Fore.RED+Style.BRIGHT}\rReff Balance: Akun ga punya reff", flush=True)
         else:
             print(f"{Fore.RED+Style.BRIGHT}\rGagal cek reff balance", flush=True)
+
 
 
 
