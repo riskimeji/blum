@@ -244,8 +244,10 @@ while True:
                 else:
                     print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo ref", flush=True)
             else:
-                if friend_balance['canClaimAt']:
-                    claim_time = datetime.datetime.fromtimestamp(int(friend_balance['canClaimAt']) / 1000)
+                # Periksa apakah 'canClaimAt' ada sebelum mengaksesnya
+                can_claim_at = friend_balance.get('canClaimAt')
+                if can_claim_at:
+                    claim_time = datetime.datetime.fromtimestamp(int(can_claim_at) / 1000)
                     current_time = datetime.datetime.now()
                     time_diff = claim_time - current_time
                     hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
