@@ -109,12 +109,59 @@ def refresh_token(old_refresh_token):
         'refresh': old_refresh_token
     }
     response = requests.post(url, headers=headers, json=data)
-    return response.json()
+    if response.status_code == 200:
+        return response.json()
+    else:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal refresh token untuk: {old_refresh_token}")
+        return None  # atau kembalikan respons untuk penanganan lebih lanjut
 # Membaca semua token dan menyimpannya dalam list
 with open('token.txt', 'r') as file:
     tokens = file.read().splitlines()
 
+# Fungsi untuk memeriksa saldo teman
+def check_balance_friend(token):
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.9',
+        'origin': 'https://telegram.blum.codes',
+        'priority': 'u=1, i',
+        'sec-ch-ua': '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24", "Microsoft Edge WebView2";v="125"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
+    }
+    response = requests.get('https://gateway.blum.codes/v1/friends/balance', headers=headers)
+    balance_info = response.json()
+    return balance_info
+
+# Fungsi untuk mengklaim saldo teman
+
+
+def claim_balance_friend(token):
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.9',
+        'content-length': '0',
+        'origin': 'https://telegram.blum.codes',
+        'priority': 'u=1, i',
+        'sec-ch-ua': '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24", "Microsoft Edge WebView2";v="125"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
+    }
+    response = requests.post('https://gateway.blum.codes/v1/friends/claim', headers=headers)
+    return response.json()
+
 # cek daily 
+
 def check_daily_reward(token):
     headers = {
         'Authorization': f'Bearer {token}',
@@ -131,15 +178,21 @@ def check_daily_reward(token):
         'sec-fetch-site': 'same-site'
     }
     response = requests.post('https://game-domain.blum.codes/api/v1/daily-reward?offset=-420', headers=headers)
-    return response.json() 
+    try:
+        return response.json()
+    except ValueError:  # Menangkap kesalahan jika json tidak dapat diurai
+        print(f"{Fore.RED+Style.BRIGHT}Gagal claim daily")
+        return None
 
 while True:
     for token in tokens:
         user_info = get_user_info(token)
         if user_info is None:
             continue
-        print(f"{Fore.BLUE+Style.BRIGHT}\n==================[{user_info['username']}]==================")  
+        print(f"{Fore.BLUE+Style.BRIGHT}\n==================[{Fore.WHITE+Style.BRIGHT}{user_info['username']}{Fore.BLUE+Style.BRIGHT}]==================")  
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Getting Info....", end="", flush=True)
+
+
 
         balance_info = get_balance(token)
         print(f"\r{Fore.YELLOW+Style.BRIGHT}[Balance]: {balance_info['availableBalance']}", flush=True)
@@ -172,25 +225,46 @@ while True:
         # print(daily_reward_response)
     
         if hours_remaining < 0:
-
-
             print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming balance...", end="", flush=True)
             claim_response = claim_balance(token)
             print(f"\r{Fore.GREEN+Style.BRIGHT}Claimed: {claim_response['availableBalance']}                ", flush=True)
             print(f"\r{Fore.GREEN+Style.BRIGHT}Starting farming...", end="", flush=True)
             start_response = start_farming(token)
             print(f"\r{Fore.GREEN+Style.BRIGHT}Farming started.", flush=True)
+        print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking reff balance...", end="", flush=True)
+        friend_balance = check_balance_friend(token)
+        if friend_balance:
+            if friend_balance['canClaim']:
+                print(f"{Fore.GREEN+Style.BRIGHT}Reff Balance: {friend_balance['amountForClaim']}", flush=True)
+                print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming Ref balance.....", flush=True)
+                claim_friend_balance = claim_balance_friend(token)
+                if claim_friend_balance:
+                    claimed_amount = claim_friend_balance['claimBalance']
+                    print(f"{Fore.GREEN+Style.BRIGHT}Sukses claim total: {claimed_amount}", flush=True)
+                else:
+                    print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo ref", flush=True)
 
-        if balance_info['playPasses'] > 0:
+            else:
+                claim_time = datetime.datetime.fromtimestamp(int(friend_balance['canClaimAt']) / 1000)
+                current_time = datetime.datetime.now()
+                time_diff = claim_time - current_time
+                hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
+                minutes, seconds = divmod(remainder, 60)
+                print(f"{Fore.RED+Style.BRIGHT}\rReff Balance: Klaim pada {hours} jam {minutes} menit lagi", flush=True)
+        else:
+            print(f"{Fore.RED+Style.BRIGHT}\rGagal cek reff balance", flush=True)
+
+
+
+
+        while balance_info['playPasses'] > 0:
             print(f"{Fore.CYAN+Style.BRIGHT}Playing game...")
             game_response = play_game(token)
             print(f"\r{Fore.CYAN+Style.BRIGHT}Checking game...", end="", flush=True)
             time.sleep(1)
             claim_response = claim_game(token, game_response['gameId'], 2000)
             if claim_response is None:
-                # print(claim_response)
                 print(f"\r{Fore.RED+Style.BRIGHT}Gagal mengklaim game, mencoba lagi...", flush=True)
-                # continue  # Lanjutkan ke iterasi berikutnya dalam loop
 
             while True:
                 if claim_response.text == '{"message":"game session not finished"}':
@@ -199,14 +273,20 @@ while True:
                     claim_response = claim_game(token, game_response['gameId'], 2000)
                     if claim_response is None:
                         print(f"\r{Fore.RED+Style.BRIGHT}Gagal mengklaim game, mencoba lagi...", flush=True)
-                        # continue  # Lanjutkan ke iterasi berikutnya dalam loop
                 elif claim_response.text == '{"message":"game session not found"}':
                     print(f"\r{Fore.RED+Style.BRIGHT}Game sudah berakhir", flush=True)
                     break
-
                 else:
                     print(f"\r{Fore.YELLOW+Style.BRIGHT}Game selesai: {claim_response.text}", flush=True)
                     break
+            # Setelah klaim game, cek lagi jumlah tiket
+            balance_info = get_balance(token)  # Refresh informasi saldo untuk mendapatkan tiket terbaru
+            if balance_info['playPasses'] > 0:
+                print(f"\r{Fore.GREEN+Style.BRIGHT}Tiket masih tersedia, memainkan game lagi...", flush=True)
+                continue  # Lanjutkan loop untuk memainkan game lagi
+            else:
+                print(f"\r{Fore.RED+Style.BRIGHT}Tidak ada tiket tersisa.", flush=True)
+                break
      
        
     # Refresh token setelah semua token diproses
@@ -215,12 +295,11 @@ while True:
     print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Refreshing token...", end="", flush=True)
     for token in tokens:
         refresh_response = refresh_token(token)
-
-        updated_tokens.append(refresh_response['refresh'])
-    print(f"\r{Fore.GREEN+Style.BRIGHT}Refresh token sukses!", flush=True)
+        if refresh_response:
+            updated_tokens.append(refresh_response['refresh'])
+        else:
+            print(f"{Fore.RED+Style.BRIGHT}Token tidak diperbarui: {token}")
     # Menulis kembali semua token ke file
-
-
 
     with open('token.txt', 'w') as file:
         for updated_token in updated_tokens:
