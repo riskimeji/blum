@@ -227,12 +227,20 @@ while True:
         if hours_remaining < 0:
             print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming balance...", end="", flush=True)
             claim_response = claim_balance(token)
-            print(f"\r{Fore.GREEN+Style.BRIGHT}Claimed: {claim_response['availableBalance']}                ", flush=True)
-            print(f"\r{Fore.GREEN+Style.BRIGHT}Starting farming...", end="", flush=True)
-            start_response = start_farming(token)
-            print(f"\r{Fore.GREEN+Style.BRIGHT}Farming started.", flush=True)
+            if claim_response:
+                print(f"\r{Fore.GREEN+Style.BRIGHT}Claimed: {claim_response['availableBalance']}                ", flush=True)
+                print(f"\r{Fore.GREEN+Style.BRIGHT}Starting farming...", end="", flush=True)
+                start_response = start_farming(token)
+                if start_response:
+                    print(f"\r{Fore.GREEN+Style.BRIGHT}Farming started.", flush=True)
+                else:
+                    print(f"\r{Fore.RED+Style.BRIGHT}Gagal start farming", start_response.status_code, flush=True)
+            else:
+                print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim", claim_response.status_code, flush=True)
+
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking reff balance...", end="", flush=True)
         friend_balance = check_balance_friend(token)
+
         if friend_balance:
             if friend_balance['canClaim']:
                 print(f"{Fore.GREEN+Style.BRIGHT}Reff Balance: {friend_balance['amountForClaim']}", flush=True)
@@ -284,6 +292,13 @@ while True:
                 else:
                     print(f"\r{Fore.YELLOW+Style.BRIGHT}Game selesai: {claim_response.text}", flush=True)
                     break
+            refresh_response = refresh_token(token)
+            print(f"\r{Fore.YELLOW+Style.BRIGHT}Refreshing token...", end="", flush=True)
+            if refresh_response:
+                token = refresh_response['refresh']  # Update token dengan yang baru
+                print(f"\r{Fore.GREEN+Style.BRIGHT}Token refreshed.             ", flush=True)
+            else:
+                print(f"{Fore.RED+Style.BRIGHT}Token tidak diperbarui: {token}")
             # Setelah klaim game, cek lagi jumlah tiket
             balance_info = get_balance(token)  # Refresh informasi saldo untuk mendapatkan tiket terbaru
             if balance_info['playPasses'] > 0:
