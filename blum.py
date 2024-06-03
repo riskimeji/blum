@@ -4,8 +4,44 @@ import time
 import datetime
 from colorama import init, Fore, Style
 init(autoreset=True)
+
+def get_new_token(query_id):
+    import json
+    # Header untuk permintaan HTTP
+    headers = {
+        "accept": "application/json, text/plain, */*",
+        "accept-language": "en-US,en;q=0.9",
+        "content-type": "application/json",
+        "origin": "https://telegram.blum.codes",
+        "priority": "u=1, i",
+        "referer": "https://telegram.blum.codes/"
+    }
+
+    # Data yang akan dikirim dalam permintaan POST
+    data = json.dumps({"query": query_id})
+
+    # URL endpoint
+    url = "https://gateway.blum.codes/v1/auth/provider/PROVIDER_TELEGRAM_MINI_APP"
+
+    # Mencoba mendapatkan token hingga 3 kali
+    for attempt in range(3):
+        print(f"\r{Fore.YELLOW+Style.BRIGHT}Mendapatkan token...", end="", flush=True)
+        response = requests.post(url, headers=headers, data=data)
+        if response.status_code == 200:
+            print(f"\r{Fore.GREEN+Style.BRIGHT}Token berhasil dibuat", end="", flush=True)
+            response_json = response.json()
+            return response_json['token']['refresh']
+        else:
+            print(response.json())
+            print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan token, percobaan {attempt + 1}", flush=True)
+    # Jika semua percobaan gagal
+
+    print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan token setelah 3 percobaan.", flush=True)
+    return None
+
 # Fungsi untuk mendapatkan informasi pengguna
 def get_user_info(token):
+
     headers = {
         'Authorization': f'Bearer {token}',
         'accept': 'application/json, text/plain, */*',
@@ -19,8 +55,15 @@ def get_user_info(token):
     else:
         hasil = response.json()
         if hasil['message'] == 'Token is invalid':
-            print(f"{Fore.RED+Style.BRIGHT}Token salah")
-            return None
+            print(f"{Fore.RED+Style.BRIGHT}Token salah, mendapatkan token baru...")
+            # Mendapatkan token baru
+            new_token = get_new_token()
+            if new_token:
+                print(f"{Fore.GREEN+Style.BRIGHT}Token baru diperoleh, mencoba lagi...")
+                return get_user_info(new_token)  # Rekursif memanggil fungsi dengan token baru
+            else:
+                print(f"{Fore.RED+Style.BRIGHT}Gagal mendapatkan token baru.")
+                return None
         else:
             print(f"{Fore.RED+Style.BRIGHT}Gagal mendapatkan informasi user")
             return None
@@ -115,10 +158,7 @@ def refresh_token(old_refresh_token):
         print(f"{Fore.RED+Style.BRIGHT}Gagal refresh token untuk: {old_refresh_token}")
         return None  # atau kembalikan respons untuk penanganan lebih lanjut
 # Membaca semua token dan menyimpannya dalam list
-with open('token.txt', 'r') as file:
-    tokens = file.read().splitlines()
 
-# Fungsi untuk memeriksa saldo teman
 def check_balance_friend(token):
     headers = {
         'Authorization': f'Bearer {token}',
@@ -184,20 +224,19 @@ def check_daily_reward(token):
         print(f"{Fore.RED+Style.BRIGHT}Gagal claim daily")
         return None
 
+with open('tgwebapp.txt', 'r') as file:
+    query_ids = file.read().splitlines()
 while True:
-    for token in tokens:
+    for query_id in query_ids:
+        token = get_new_token(query_id)  # Mendapatkan token baru
         user_info = get_user_info(token)
         if user_info is None:
             continue
-        print(f"{Fore.BLUE+Style.BRIGHT}\n==================[{Fore.WHITE+Style.BRIGHT}{user_info['username']}{Fore.BLUE+Style.BRIGHT}]==================")  
+        print(f"{Fore.BLUE+Style.BRIGHT}\r==================[{Fore.WHITE+Style.BRIGHT}{user_info['username']}{Fore.BLUE+Style.BRIGHT}]==================")  
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Getting Info....", end="", flush=True)
-
-
-
         balance_info = get_balance(token)
         print(f"\r{Fore.YELLOW+Style.BRIGHT}[Balance]: {balance_info['availableBalance']}", flush=True)
         print(f"{Fore.RED+Style.BRIGHT}[Tiket Game]: {balance_info['playPasses']}")
-
         # Periksa apakah 'farming' ada dalam balance_info sebelum mengaksesnya
         farming_info = balance_info.get('farming')
         if farming_info:
@@ -214,7 +253,6 @@ while True:
         # cek daily 
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking daily reward...", end="", flush=True)
         daily_reward_response = check_daily_reward(token)
-
         if daily_reward_response is None:
             print(f"\r{Fore.RED+Style.BRIGHT}Gagal cek hadiah harian, mencoba lagi...", flush=True)
         else:
@@ -223,7 +261,7 @@ while True:
             elif daily_reward_response['message'] == 'OK':
                 print(f"\r{Fore.GREEN+Style.BRIGHT}Hadiah harian berhasil diklaim!", flush=True)
         # print(daily_reward_response)
-    
+
         if hours_remaining < 0:
             print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming balance...", end="", flush=True)
             claim_response = claim_balance(token)
@@ -237,20 +275,18 @@ while True:
                     print(f"\r{Fore.RED+Style.BRIGHT}Gagal start farming", start_response.status_code, flush=True)
             else:
                 print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim", claim_response.status_code, flush=True)
-
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking reff balance...", end="", flush=True)
         friend_balance = check_balance_friend(token)
-
         if friend_balance:
             if friend_balance['canClaim']:
-                print(f"{Fore.GREEN+Style.BRIGHT}Reff Balance: {friend_balance['amountForClaim']}", flush=True)
-                print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming Ref balance.....", flush=True)
+                print(f"\r{Fore.GREEN+Style.BRIGHT}Reff Balance: {friend_balance['amountForClaim']}", flush=True)
+                print(f"\n\r{Fore.GREEN+Style.BRIGHT}Claiming Ref balance.....", flush=True)
                 claim_friend_balance = claim_balance_friend(token)
                 if claim_friend_balance:
                     claimed_amount = claim_friend_balance['claimBalance']
-                    print(f"{Fore.GREEN+Style.BRIGHT}Sukses claim total: {claimed_amount}", flush=True)
+                    print(f"\r{Fore.GREEN+Style.BRIGHT}Sukses claim total: {claimed_amount}", flush=True)
                 else:
-                    print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo ref", flush=True)
+                    print(f"\r{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo ref", flush=True)
             else:
                 # Periksa apakah 'canClaimAt' ada sebelum mengaksesnya
                 can_claim_at = friend_balance.get('canClaimAt')
@@ -265,11 +301,6 @@ while True:
                     print(f"{Fore.RED+Style.BRIGHT}\rReff Balance: Akun ga punya reff", flush=True)
         else:
             print(f"{Fore.RED+Style.BRIGHT}\rGagal cek reff balance", flush=True)
-
-
-
-
-
         while balance_info['playPasses'] > 0:
             print(f"{Fore.CYAN+Style.BRIGHT}Playing game...")
             game_response = play_game(token)
@@ -278,7 +309,6 @@ while True:
             claim_response = claim_game(token, game_response['gameId'], 2000)
             if claim_response is None:
                 print(f"\r{Fore.RED+Style.BRIGHT}Gagal mengklaim game, mencoba lagi...", flush=True)
-
             while True:
                 if claim_response.text == '{"message":"game session not finished"}':
                     time.sleep(1)  # Tunggu sebentar sebelum mencoba lagi
@@ -289,16 +319,13 @@ while True:
                 elif claim_response.text == '{"message":"game session not found"}':
                     print(f"\r{Fore.RED+Style.BRIGHT}Game sudah berakhir", flush=True)
                     break
+                elif 'message' in claim_response and claim_response['message'] == 'Token is invalid':
+                    print(f"{Fore.RED+Style.BRIGHT}Token tidak valid, mendapatkan token baru...")
+                    token = get_new_token(query_id)  # Asumsi query_id tersedia di scope ini
+                    continue  # Kembali ke awal loop untuk mencoba lagi dengan token baru
                 else:
                     print(f"\r{Fore.YELLOW+Style.BRIGHT}Game selesai: {claim_response.text}", flush=True)
                     break
-            refresh_response = refresh_token(token)
-            print(f"\r{Fore.YELLOW+Style.BRIGHT}Refreshing token...", end="", flush=True)
-            if refresh_response:
-                token = refresh_response['refresh']  # Update token dengan yang baru
-                print(f"\r{Fore.GREEN+Style.BRIGHT}Token refreshed.             ", flush=True)
-            else:
-                print(f"{Fore.RED+Style.BRIGHT}Token tidak diperbarui: {token}")
             # Setelah klaim game, cek lagi jumlah tiket
             balance_info = get_balance(token)  # Refresh informasi saldo untuk mendapatkan tiket terbaru
             if balance_info['playPasses'] > 0:
@@ -307,29 +334,15 @@ while True:
             else:
                 print(f"\r{Fore.RED+Style.BRIGHT}Tidak ada tiket tersisa.", flush=True)
                 break
-     
-       
-    # Refresh token setelah semua token diproses
-    updated_tokens = []
+
+        
     print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Semua akun berhasil di proses{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
     print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Refreshing token...", end="", flush=True)
-    for token in tokens:
-        refresh_response = refresh_token(token)
-        if refresh_response:
-            updated_tokens.append(refresh_response['refresh'])
-        else:
-            print(f"{Fore.RED+Style.BRIGHT}Token tidak diperbarui: {token}")
-    # Menulis kembali semua token ke file
-
-    with open('token.txt', 'w') as file:
-        for updated_token in updated_tokens:
-            file.write(updated_token + '\n')
     import sys
-    import time
-
-    waktu_tunggu = 300  # 5 menit dalam detik
+    waktu_tunggu = 30  # 5 menit dalam detik
     for detik in range(waktu_tunggu, 0, -1):
         sys.stdout.write(f"\r{Fore.CYAN}Menunggu waktu claim berikutnya dalam {Fore.CYAN}{Fore.WHITE}{detik // 60} menit {Fore.WHITE}{detik % 60} detik")
         sys.stdout.flush()
         time.sleep(1)
-    sys.stdout.write("\rWaktu claim berikutnya telah tiba!                                      \n")
+    sys.stdout.write("\rWaktu claim berikutnya telah tiba!                                                          \n")
+

@@ -5,7 +5,7 @@ Auto Claim Blum
 Join Here : [Blum](https://t.me/BlumCryptoBot/app?startapp=ref_lHZLjPuq0F)
 Butuh invite code biar ga whitelist
 
-Gunakan Link ini 
+Gunakan Link ini (ABIS KEKNYA)
 [Ref 1](https://t.me/BlumCryptoBot/app?startapp=ref_lHZLjPuq0F)
 [Ref 2](https://t.me/BlumCryptoBot/app?startapp=ref_Hmj2vqfa9K)
 [Ref 3](https://t.me/BlumCryptoBot/app?startapp=ref_92NqxwUBXs)
@@ -24,18 +24,21 @@ Install with python
   1. Download Python 3.10+
   2. Install Module (pip install requests colorama)
   3. Buka Bot Blum di PC (Telegram Web / Desktop)
-  4. Ambil token di network Authorization : Bearer xxxxx
-  5. Paste di token.txt (Bearernya gausah di ikutin)
+  4. Ambil query_id 
+  5. Caranya > inspek elemen > terus ke application > storage (session storage) > pilih telegram.blum.codes
+  6. Pilih __telegram_initparam > tgwebappdata ambil query_id=xxx (ambil semua) kecuali tgwebappnya
+  5. Paste di tgwebapp.txt
 ```
 
 
 ## Features
 
-- Auto Claim Task (Soon)
+- Auto Get Token
 - Auto Claim Blum
+- Auto Claim Balance Friend
 - Auto Playing Game with max score
 - Auto Checkin Daily
-- Auto Refresh token
+- Multi Account
 
 ## Screenshots
 
