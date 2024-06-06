@@ -1,3 +1,6 @@
+# Made with ❤ by @adearman
+# Join tele channel for update t.me/ghalibie
+
 import requests
 from requests.structures import CaseInsensitiveDict
 import time
@@ -5,6 +8,98 @@ import datetime
 from colorama import init, Fore, Style
 init(autoreset=True)
 
+
+
+def check_tasks(token):
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.9',
+        'content-length': '0',
+        'origin': 'https://telegram.blum.codes',
+        'priority': 'u=1, i',
+        'sec-ch-ua': '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24", "Microsoft Edge WebView2";v="125"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
+    }
+   
+    try:
+        response = requests.get('https://game-domain.blum.codes/api/v1/tasks', headers=headers)
+        if response.status_code == 200:
+            tasks = response.json()
+            for task in tasks:
+                titlenya = task['title']
+                if task['status'] == 'CLAIMED':
+                    print(f"{Fore.CYAN+Style.BRIGHT}Task {titlenya} claimed  | Status: {task['status']} | Reward: {task['reward']}")
+                elif task['status'] == 'NOT_STARTED':
+                    print(f"{Fore.YELLOW+Style.BRIGHT}Starting Task: {task['title']}")
+                    start_task(token, task['id'],titlenya)
+                    claim_task(token, task['id'],titlenya)
+                else:
+                    print(f"{Fore.CYAN+Style.BRIGHT}Task already started: {task['title']} | Status: {task['status']} | Reward: {task['reward']}")
+        else:
+            print(f"{Fore.RED+Style.BRIGHT}\nFailed to get tasks")
+    except:
+        print(f"{Fore.RED+Style.BRIGHT}\nFailed to get tasks {response.status_code} ")
+def start_task(token, task_id,titlenya):
+    url = f'https://game-domain.blum.codes/api/v1/tasks/{task_id}/start'
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.9',
+        'content-length': '0',
+        'origin': 'https://telegram.blum.codes',
+        'priority': 'u=1, i',
+        'sec-ch-ua': '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24", "Microsoft Edge WebView2";v="125"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
+    }
+    try:
+        response = requests.post(url, headers=headers)
+        if response.status_code == 200:
+            print(f"{Fore.GREEN+Style.BRIGHT}\nTask {titlenya} started")
+        else:
+            print(f"{Fore.RED+Style.BRIGHT}\nFailed to start task {titlenya}")
+        return 
+    except:
+        print(f"{Fore.RED+Style.BRIGHT}\nFailed to start task {titlenya} {response.status_code} ")
+
+def claim_task(token, task_id,titlenya):
+    print(f"{Fore.YELLOW+Style.BRIGHT}\nClaiming task {titlenya}")
+    url = f'https://game-domain.blum.codes/api/v1/tasks/{task_id}/claim'
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'accept': 'application/json, text/plain, */*',
+        'accept-language': 'en-US,en;q=0.9',
+        'content-length': '0',
+        'origin': 'https://telegram.blum.codes',
+        'priority': 'u=1, i',
+        'sec-ch-ua': '"Microsoft Edge";v="125", "Chromium";v="125", "Not.A/Brand";v="24", "Microsoft Edge WebView2";v="125"',
+        'sec-ch-ua-mobile': '?0',
+        'sec-ch-ua-platform': '"Windows"',
+        'sec-fetch-dest': 'empty',
+        'sec-fetch-mode': 'cors',
+        'sec-fetch-site': 'same-site',
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
+    }
+    try:
+        response = requests.post(url, headers=headers)
+        if response.status_code == 200:
+            print(f"{Fore.CYAN+Style.BRIGHT}\nTask {titlenya} claimed")
+        else:
+            print(f"{Fore.RED+Style.BRIGHT}\nFailed to claim task {titlenya}")
+    except:
+        print(f"{Fore.RED+Style.BRIGHT}\nFailed to claim task {titlenya} {response.status_code} ")
+
+        
 def get_new_token(query_id):
     import json
     # Header untuk permintaan HTTP
@@ -77,8 +172,17 @@ def get_balance(token):
         'origin': 'https://telegram.blum.codes',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
     }
-    response = requests.get('https://game-domain.blum.codes/api/v1/user/balance', headers=headers)
-    return response.json()
+    for attempt in range(3):
+        try:
+            response = requests.get('https://game-domain.blum.codes/api/v1/user/balance', headers=headers)
+            if response.status_code == 200:
+                return response.json()
+            else:
+                print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo, percobaan {attempt + 1}", flush=True)
+        except:
+            print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo, mencoba lagi {attempt + 1}", flush=True)
+    print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo setelah 3 percobaan.", flush=True)
+    return None
 
 # Fungsi untuk memainkan game
 def play_game(token):
@@ -224,6 +328,15 @@ def check_daily_reward(token):
         print(f"{Fore.RED+Style.BRIGHT}Gagal claim daily")
         return None
 
+while True:
+    cek_task_enable = input("Cek and Claim Task (default n) ? (y/n): ").strip().lower()
+    if cek_task_enable in ['y', 'n', '']:
+        cek_task_enable = cek_task_enable or 'n'
+        break
+    else:
+        print("Masukkan 'y' atau 'n'.")
+
+checked_tasks = {}
 with open('tgwebapp.txt', 'r') as file:
     query_ids = file.read().splitlines()
 while True:
@@ -249,7 +362,7 @@ while True:
             minutes_remaining = int((time_difference.total_seconds() % 3600) // 60)
             print(f"Waktu Claim: {hours_remaining} jam {minutes_remaining} menit | Balance: {farming_info['balance']}")
         else:
-            print(f"{Fore.RED+Style.BRIGHT}Informasi farming tidak tersedia")
+            print(f"{Fore.RED+Style.BRIGHT}Informasi balance tidak tersedia")
         # cek daily 
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking daily reward...", end="", flush=True)
         daily_reward_response = check_daily_reward(token)
@@ -261,6 +374,12 @@ while True:
             elif daily_reward_response['message'] == 'OK':
                 print(f"\r{Fore.GREEN+Style.BRIGHT}Hadiah harian berhasil diklaim!", flush=True)
         # print(daily_reward_response)
+        # cek task 
+        if cek_task_enable == 'y':
+            if query_id not in checked_tasks or not checked_tasks[query_id]:
+                print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking tasks...", end="", flush=True)
+                check_tasks(token)
+                checked_tasks[query_id] = True
 
         if hours_remaining < 0:
             print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming balance...", end="", flush=True)
@@ -275,7 +394,7 @@ while True:
                     print(f"\r{Fore.RED+Style.BRIGHT}Gagal start farming", start_response.status_code, flush=True)
             else:
                 print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim", claim_response.status_code, flush=True)
-        print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking reff balance...", end="", flush=True)
+        print(f"\n\r{Fore.YELLOW+Style.BRIGHT}Checking reff balance...", end="", flush=True)
         friend_balance = check_balance_friend(token)
         if friend_balance:
             if friend_balance['canClaim']:
@@ -345,4 +464,5 @@ while True:
         sys.stdout.flush()
         time.sleep(1)
     sys.stdout.write("\rWaktu claim berikutnya telah tiba!                                                          \n")
+
 
