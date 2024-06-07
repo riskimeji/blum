@@ -175,7 +175,9 @@ def get_balance(token):
     for attempt in range(3):
         try:
             response = requests.get('https://game-domain.blum.codes/api/v1/user/balance', headers=headers)
+            # print(response.json())
             if response.status_code == 200:
+                # print(f"{Fore.GREEN+Style.BRIGHT}Berhasil mendapatkan saldo")
                 return response.json()
             else:
                 print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo, percobaan {attempt + 1}", flush=True)
@@ -323,12 +325,16 @@ def check_daily_reward(token):
     }
     try:
         response = requests.post('https://game-domain.blum.codes/api/v1/daily-reward?offset=-420', headers=headers, timeout=10)
-        response.raise_for_status()  # Menangani status kode HTTP yang tidak sukses
-        return response.json()
+        if response.status_code == 400 and response.json() == {"message": "Not Found"}:
+            return response.json()
+        else:
+            response.raise_for_status()  # Menangani status kode HTTP yang tidak sukses
+            return response.json()
     except requests.exceptions.Timeout:
         print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim daily: Timeout")
     except requests.exceptions.RequestException as e:
-        print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim daily: {e}")
+        return response.json()
+      
     return None
 
 while True:
@@ -347,6 +353,8 @@ def print_welcome_message():
     print(Fore.GREEN + Style.BRIGHT + "Blum BOT")
     print(Fore.GREEN + Style.BRIGHT + "Update Link: https://github.com/adearman/blum")
     print(Fore.GREEN + Style.BRIGHT + "Join Telegram Channel: https://t.me/ghalibie\n")
+    print(Fore.GREEN + Style.BRIGHT + "Free Konsultasi Join Telegram Channel: https://t.me/ghalibie\n")
+    print(Fore.GREEN + Style.BRIGHT + "Buy me a coffee :) 0823 2367 3487 GOPAY / DANA")
 checked_tasks = {}
 with open('tgwebapp.txt', 'r') as file:
     query_ids = file.read().splitlines()
@@ -361,14 +369,16 @@ while True:
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Getting Info....", end="", flush=True)
         balance_info = get_balance(token)
         # print(balance_info)
-        if balance_info is None:
+        if balance_info.get('availableBalance') is None:
             print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan informasi balance", flush=True)
         else:
             print(f"\r{Fore.YELLOW+Style.BRIGHT}[Balance]: {balance_info['availableBalance']}", flush=True)
             print(f"{Fore.RED+Style.BRIGHT}[Tiket Game]: {balance_info['playPasses']}")
             # Periksa apakah 'farming' ada dalam balance_info sebelum mengaksesnya
             farming_info = balance_info.get('farming')
+      
             if farming_info:
+
                 end_time_ms = farming_info['endTime']
                 end_time_s = end_time_ms / 1000.0
                 end_utc_date_time = datetime.datetime.fromtimestamp(end_time_s, datetime.timezone.utc)
@@ -392,18 +402,33 @@ while True:
                     else:
                         print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim", claim_response.status_code, flush=True)
             else:
-                print(f"{Fore.RED+Style.BRIGHT}Informasi balance tidak tersedia")
+                print(f"\n{Fore.RED+Style.BRIGHT}Gagal mendapatkan informasi farming", flush=True)
+                print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming balance...", end="", flush=True)
+                claim_response = claim_balance(token)
+                if claim_response:
+                    print(f"\r{Fore.GREEN+Style.BRIGHT}Claimed               ", flush=True)
+                    print(f"\r{Fore.GREEN+Style.BRIGHT}Starting farming...", end="", flush=True)
+                    start_response = start_farming(token)
+                    if start_response:
+                        print(f"\r{Fore.GREEN+Style.BRIGHT}Farming started.", flush=True)
+                    else:
+                        print(f"\r{Fore.RED+Style.BRIGHT}Gagal start farming", start_response.status_code, flush=True)
+                else:
+                    print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim", claim_response.status_code, flush=True)
 
         # cek daily 
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking daily reward...", end="", flush=True)
         daily_reward_response = check_daily_reward(token)
+        
         if daily_reward_response is None:
             print(f"\r{Fore.RED+Style.BRIGHT}Gagal cek hadiah harian, mencoba lagi...", flush=True)
         else:
-            if daily_reward_response['message'] == 'same day':
+            if daily_reward_response.get('message') == 'same day':
                 print(f"\r{Fore.RED+Style.BRIGHT}Hadiah harian sudah diklaim hari ini", flush=True)
-            elif daily_reward_response['message'] == 'OK':
+            elif daily_reward_response.get('message') == 'OK':
                 print(f"\r{Fore.GREEN+Style.BRIGHT}Hadiah harian berhasil diklaim!", flush=True)
+            else:
+                print(f"\r{Fore.RED+Style.BRIGHT}Gagal cek hadiah harian. {daily_reward_response}", flush=True)
         # print(daily_reward_response)
         # cek task 
         if cek_task_enable == 'y':
