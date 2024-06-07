@@ -321,12 +321,15 @@ def check_daily_reward(token):
         'sec-fetch-mode': 'cors',
         'sec-fetch-site': 'same-site'
     }
-    response = requests.post('https://game-domain.blum.codes/api/v1/daily-reward?offset=-420', headers=headers)
     try:
+        response = requests.post('https://game-domain.blum.codes/api/v1/daily-reward?offset=-420', headers=headers, timeout=10)
+        response.raise_for_status()  # Menangani status kode HTTP yang tidak sukses
         return response.json()
-    except ValueError:  # Menangkap kesalahan jika json tidak dapat diurai
-        print(f"{Fore.RED+Style.BRIGHT}Gagal claim daily")
-        return None
+    except requests.exceptions.Timeout:
+        print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim daily: Timeout")
+    except requests.exceptions.RequestException as e:
+        print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim daily: {e}")
+    return None
 
 while True:
     cek_task_enable = input("Cek and Claim Task (default n) ? (y/n): ").strip().lower()
@@ -335,11 +338,20 @@ while True:
         break
     else:
         print("Masukkan 'y' atau 'n'.")
-
+def print_welcome_message():
+    print(r"""
+          
+█▀▀ █░█ ▄▀█ █░░ █ █▄▄ █ █▀▀
+█▄█ █▀█ █▀█ █▄▄ █ █▄█ █ ██▄
+          """)
+    print(Fore.GREEN + Style.BRIGHT + "Blum BOT")
+    print(Fore.GREEN + Style.BRIGHT + "Update Link: https://github.com/adearman/blum")
+    print(Fore.GREEN + Style.BRIGHT + "Join Telegram Channel: https://t.me/ghalibie\n")
 checked_tasks = {}
 with open('tgwebapp.txt', 'r') as file:
     query_ids = file.read().splitlines()
 while True:
+    print_welcome_message()
     for query_id in query_ids:
         token = get_new_token(query_id)  # Mendapatkan token baru
         user_info = get_user_info(token)
@@ -348,21 +360,40 @@ while True:
         print(f"{Fore.BLUE+Style.BRIGHT}\r==================[{Fore.WHITE+Style.BRIGHT}{user_info['username']}{Fore.BLUE+Style.BRIGHT}]==================")  
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Getting Info....", end="", flush=True)
         balance_info = get_balance(token)
-        print(f"\r{Fore.YELLOW+Style.BRIGHT}[Balance]: {balance_info['availableBalance']}", flush=True)
-        print(f"{Fore.RED+Style.BRIGHT}[Tiket Game]: {balance_info['playPasses']}")
-        # Periksa apakah 'farming' ada dalam balance_info sebelum mengaksesnya
-        farming_info = balance_info.get('farming')
-        if farming_info:
-            end_time_ms = farming_info['endTime']
-            end_time_s = end_time_ms / 1000.0
-            end_utc_date_time = datetime.datetime.fromtimestamp(end_time_s, datetime.timezone.utc)
-            current_utc_time = datetime.datetime.now(datetime.timezone.utc)
-            time_difference = end_utc_date_time - current_utc_time
-            hours_remaining = int(time_difference.total_seconds() // 3600)
-            minutes_remaining = int((time_difference.total_seconds() % 3600) // 60)
-            print(f"Waktu Claim: {hours_remaining} jam {minutes_remaining} menit | Balance: {farming_info['balance']}")
+        print(balance_info)
+        if balance_info is None:
+            print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan informasi balance", flush=True)
         else:
-            print(f"{Fore.RED+Style.BRIGHT}Informasi balance tidak tersedia")
+            print(f"\r{Fore.YELLOW+Style.BRIGHT}[Balance]: {balance_info['availableBalance']}", flush=True)
+            print(f"{Fore.RED+Style.BRIGHT}[Tiket Game]: {balance_info['playPasses']}")
+            # Periksa apakah 'farming' ada dalam balance_info sebelum mengaksesnya
+            farming_info = balance_info.get('farming')
+            if farming_info:
+                end_time_ms = farming_info['endTime']
+                end_time_s = end_time_ms / 1000.0
+                end_utc_date_time = datetime.datetime.fromtimestamp(end_time_s, datetime.timezone.utc)
+                current_utc_time = datetime.datetime.now(datetime.timezone.utc)
+                time_difference = end_utc_date_time - current_utc_time
+                hours_remaining = int(time_difference.total_seconds() // 3600)
+                minutes_remaining = int((time_difference.total_seconds() % 3600) // 60)
+                print(f"Waktu Claim: {hours_remaining} jam {minutes_remaining} menit | Balance: {farming_info['balance']}")
+
+                if hours_remaining < 0:
+                    print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming balance...", end="", flush=True)
+                    claim_response = claim_balance(token)
+                    if claim_response:
+                        print(f"\r{Fore.GREEN+Style.BRIGHT}Claimed: {claim_response['availableBalance']}                ", flush=True)
+                        print(f"\r{Fore.GREEN+Style.BRIGHT}Starting farming...", end="", flush=True)
+                        start_response = start_farming(token)
+                        if start_response:
+                            print(f"\r{Fore.GREEN+Style.BRIGHT}Farming started.", flush=True)
+                        else:
+                            print(f"\r{Fore.RED+Style.BRIGHT}Gagal start farming", start_response.status_code, flush=True)
+                    else:
+                        print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim", claim_response.status_code, flush=True)
+            else:
+                print(f"{Fore.RED+Style.BRIGHT}Informasi balance tidak tersedia")
+
         # cek daily 
         print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking daily reward...", end="", flush=True)
         daily_reward_response = check_daily_reward(token)
@@ -377,23 +408,11 @@ while True:
         # cek task 
         if cek_task_enable == 'y':
             if query_id not in checked_tasks or not checked_tasks[query_id]:
-                print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking tasks...", end="", flush=True)
+                print(f"\r{Fore.YELLOW+Style.BRIGHT}Checking tasks...\n", end="", flush=True)
                 check_tasks(token)
                 checked_tasks[query_id] = True
 
-        if hours_remaining < 0:
-            print(f"\r{Fore.GREEN+Style.BRIGHT}Claiming balance...", end="", flush=True)
-            claim_response = claim_balance(token)
-            if claim_response:
-                print(f"\r{Fore.GREEN+Style.BRIGHT}Claimed: {claim_response['availableBalance']}                ", flush=True)
-                print(f"\r{Fore.GREEN+Style.BRIGHT}Starting farming...", end="", flush=True)
-                start_response = start_farming(token)
-                if start_response:
-                    print(f"\r{Fore.GREEN+Style.BRIGHT}Farming started.", flush=True)
-                else:
-                    print(f"\r{Fore.RED+Style.BRIGHT}Gagal start farming", start_response.status_code, flush=True)
-            else:
-                print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim", claim_response.status_code, flush=True)
+        
         print(f"\n\r{Fore.YELLOW+Style.BRIGHT}Checking reff balance...", end="", flush=True)
         friend_balance = check_balance_friend(token)
         if friend_balance:
