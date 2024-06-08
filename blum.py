@@ -328,7 +328,7 @@ def check_daily_reward(token):
         if response.status_code == 400 and response.json() == {"message": "Not Found"}:
             return response.json()
         else:
-            response.raise_for_status()  # Menangani status kode HTTP yang tidak sukses
+            # response.raise_for_status()  # Menangani status kode HTTP yang tidak sukses
             return response.json()
     except requests.exceptions.Timeout:
         print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim daily: Timeout")
