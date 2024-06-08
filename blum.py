@@ -329,7 +329,7 @@ def check_daily_reward(token):
             return response.json()
         else:
             # response.raise_for_status()  # Menangani status kode HTTP yang tidak sukses
-            return response.json()
+            return None
     except requests.exceptions.Timeout:
         print(f"\r{Fore.RED+Style.BRIGHT}Gagal claim daily: Timeout")
     except requests.exceptions.RequestException as e:
