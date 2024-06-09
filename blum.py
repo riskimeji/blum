@@ -392,11 +392,13 @@ def print_welcome_message():
 
     
 checked_tasks = {}
+
+args = parse_arguments()
+cek_task_enable = args.task
 with open('tgwebapp.txt', 'r') as file:
     query_ids = file.read().splitlines()
 while True:
-    args = parse_arguments()
-    cek_task_enable = args.task
+ 
     print_welcome_message()
     
 
