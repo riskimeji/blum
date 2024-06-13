@@ -16,6 +16,7 @@ start_time = datetime.datetime.now()  # Tentukan waktu mulai saat bot dijalankan
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Blum BOT')
     parser.add_argument('--task', type=str, choices=['y', 'n'], help='Cek and Claim Task (y/n)')
+    parser.add_argument('--reff', type=str, choices=['y', 'n'], help='Apakah ingin claim ref? (y/n, default n)')
     args = parser.parse_args()
 
     if args.task is None:
@@ -24,8 +25,13 @@ def parse_arguments():
         # Jika pengguna hanya menekan enter, gunakan 'n' sebagai default
         args.task = task_input if task_input in ['y', 'n'] else 'n'
 
-    return args
+    if args.reff is None:
+        # Jika parameter --claim_ref tidak diberikan, minta input dari pengguna
+        reff_input = input("Apakah ingin claim ref? (y/n, default n): ").strip().lower()
+        # Jika pengguna hanya menekan enter, gunakan 'n' sebagai default
+        args.reff = reff_input if reff_input in ['y', 'n'] else 'n'
 
+    return args
 
 def check_tasks(token):
     headers = {
@@ -198,6 +204,10 @@ def get_balance(token):
                 return response.json()
             else:
                 print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo, percobaan {attempt + 1}", flush=True)
+        except requests.exceptions.ConnectionError as e:
+            print(f"\r{Fore.RED+Style.BRIGHT}Koneksi gagal, mencoba lagi {attempt + 1}", flush=True)
+        except Exception as e:
+            print(f"\r{Fore.RED+Style.BRIGHT}Error: {str(e)}", flush=True)
         except:
             print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo, mencoba lagi {attempt + 1}", flush=True)
     print(f"\r{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo setelah 3 percobaan.", flush=True)
@@ -213,29 +223,35 @@ def play_game(token):
         'content-length': '0',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
     }
-    response = requests.post('https://game-domain.blum.codes/api/v1/game/play', headers=headers)
-    return response.json()
+    try:
+        response = requests.post('https://game-domain.blum.codes/api/v1/game/play', headers=headers)
+        return response.json()
+    except requests.exceptions.ConnectionError as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal bermain game karena masalah koneksi: {e}")
+    except Exception as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal bermain game karena error: {e}")
+    return None
 
-
-# Fungsi untuk mengklaim hadiah game
 def claim_game(token, game_id, points):
     url = "https://game-domain.blum.codes/api/v1/game/claim"
-
     headers = CaseInsensitiveDict()
     headers["accept"] = "application/json, text/plain, */*"
     headers["accept-language"] = "en-US,en;q=0.9"
     headers["authorization"] = "Bearer "+token
     headers["content-type"] = "application/json"
     headers["origin"] = "https://telegram.blum.codes"
-
     headers["priority"] = "u=1, i"
     headers["user-agent"] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0"
     data = '{"gameId":"'+game_id+'","points":'+str(points)+'}'
 
-    resp = requests.post(url, headers=headers, data=data)
-    return resp  # Kembalikan objek respons, bukan teksnya
-
-
+    try:
+        resp = requests.post(url, headers=headers, data=data)
+        return resp
+    except requests.exceptions.ConnectionError as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim hadiah game karena masalah koneksi: {e}")
+    except Exception as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim hadiah game karena error: {e}")
+    return None
 
 def claim_balance(token):
     headers = {
@@ -246,10 +262,15 @@ def claim_balance(token):
         'origin': 'https://telegram.blum.codes',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
     }
-    response = requests.post('https://game-domain.blum.codes/api/v1/farming/claim', headers=headers)
-    return response.json()
+    try:
+        response = requests.post('https://game-domain.blum.codes/api/v1/farming/claim', headers=headers)
+        return response.json()
+    except requests.exceptions.ConnectionError as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo karena masalah koneksi: {e}")
+    except Exception as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo karena error: {e}")
+    return None
 
-# Fungsi untuk memulai farming
 def start_farming(token):
     headers = {
         'Authorization': f'Bearer {token}',
@@ -259,8 +280,14 @@ def start_farming(token):
         'origin': 'https://telegram.blum.codes',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
     }
-    response = requests.post('https://game-domain.blum.codes/api/v1/farming/start', headers=headers)
-    return response.json()
+    try:
+        response = requests.post('https://game-domain.blum.codes/api/v1/farming/start', headers=headers)
+        return response.json()
+    except requests.exceptions.ConnectionError as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal memulai farming karena masalah koneksi: {e}")
+    except Exception as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal memulai farming karena error: {e}")
+    return None
 
 def refresh_token(old_refresh_token):
     url = 'https://gateway.blum.codes/v1/auth/refresh'
@@ -274,13 +301,18 @@ def refresh_token(old_refresh_token):
     data = {
         'refresh': old_refresh_token
     }
-    response = requests.post(url, headers=headers, json=data)
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"{Fore.RED+Style.BRIGHT}Gagal refresh token untuk: {old_refresh_token}")
-        return None  # atau kembalikan respons untuk penanganan lebih lanjut
-# Membaca semua token dan menyimpannya dalam list
+    try:
+        response = requests.post(url, headers=headers, json=data)
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"{Fore.RED+Style.BRIGHT}Gagal refresh token untuk: {old_refresh_token}")
+            return None
+    except requests.exceptions.ConnectionError as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal refresh token karena masalah koneksi: {e}")
+    except Exception as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal refresh token karena error: {e}")
+    return None
 
 def check_balance_friend(token):
     headers = {
@@ -297,12 +329,14 @@ def check_balance_friend(token):
         'sec-fetch-site': 'same-site',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
     }
-    response = requests.get('https://gateway.blum.codes/v1/friends/balance', headers=headers)
-    balance_info = response.json()
-    return balance_info
-
-# Fungsi untuk mengklaim saldo teman
-
+    try:
+        response = requests.get('https://gateway.blum.codes/v1/friends/balance', headers=headers)
+        return response.json()
+    except requests.exceptions.ConnectionError as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo teman karena masalah koneksi: {e}")
+    except Exception as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal mendapatkan saldo teman karena error: {e}")
+    return None
 
 def claim_balance_friend(token):
     headers = {
@@ -320,8 +354,14 @@ def claim_balance_friend(token):
         'sec-fetch-site': 'same-site',
         'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36 Edg/125.0.0.0'
     }
-    response = requests.post('https://gateway.blum.codes/v1/friends/claim', headers=headers)
-    return response.json()
+    try:
+        response = requests.post('https://gateway.blum.codes/v1/friends/claim', headers=headers)
+        return response.json()
+    except requests.exceptions.ConnectionError as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo teman karena masalah koneksi: {e}")
+    except Exception as e:
+        print(f"{Fore.RED+Style.BRIGHT}Gagal mengklaim saldo teman karena error: {e}")
+    return None
 
 # cek daily 
 import json
@@ -348,7 +388,7 @@ def check_daily_reward(token):
             except json.JSONDecodeError:
                 if response.text == "OK":
                     return response.text
-                print(f"{Fore.RED+Style.BRIGHT}Json Error: {response.text}")
+                # print(f"{Fore.RED+Style.BRIGHT}Json Error: {response.text}")
                 return None
         else:
             try:
@@ -395,6 +435,7 @@ checked_tasks = {}
 
 args = parse_arguments()
 cek_task_enable = args.task
+claim_ref_enable = args.reff
 with open('tgwebapp.txt', 'r') as file:
     query_ids = file.read().splitlines()
 while True:
@@ -474,7 +515,6 @@ while True:
         if daily_reward_response is None:
             print(f"\r{Fore.RED+Style.BRIGHT}[ Daily Reward ] : Gagal cek hadiah harian", flush=True)
         else:
-        
             if daily_reward_response.get('message') == 'same day':
                 print(f"\r{Fore.CYAN+Style.BRIGHT}[ Daily Reward ] : Hadiah harian sudah diklaim hari ini", flush=True)
             elif daily_reward_response.get('message') == 'OK':
@@ -491,31 +531,34 @@ while True:
 
         
         print(f"\r{Fore.YELLOW+Style.BRIGHT}[ Reff Balance ] : Checking reff balance...", end="", flush=True)
-        friend_balance = check_balance_friend(token)
-        if friend_balance:
-            if friend_balance['canClaim']:
-                print(f"\r{Fore.GREEN+Style.BRIGHT}Reff Balance: {friend_balance['amountForClaim']}", flush=True)
-                print(f"\n\r{Fore.GREEN+Style.BRIGHT}Claiming Ref balance.....", flush=True)
-                claim_friend_balance = claim_balance_friend(token)
-                if claim_friend_balance:
-                    claimed_amount = claim_friend_balance['claimBalance']
-                    print(f"\r{Fore.GREEN+Style.BRIGHT}[ Reff Balance ] : Sukses claim total: {claimed_amount}", flush=True)
+        if claim_ref_enable == 'y':
+            friend_balance = check_balance_friend(token)
+            if friend_balance:
+                if friend_balance['canClaim']:
+                    print(f"\r{Fore.GREEN+Style.BRIGHT}Reff Balance: {friend_balance['amountForClaim']}", flush=True)
+                    print(f"\n\r{Fore.GREEN+Style.BRIGHT}Claiming Ref balance.....", flush=True)
+                    claim_friend_balance = claim_balance_friend(token)
+                    if claim_friend_balance:
+                        claimed_amount = claim_friend_balance['claimBalance']
+                        print(f"\r{Fore.GREEN+Style.BRIGHT}[ Reff Balance ] : Sukses claim total: {claimed_amount}", flush=True)
+                    else:
+                        print(f"\r{Fore.RED+Style.BRIGHT}[ Reff Balance ] : Gagal mengklaim saldo ref", flush=True)
                 else:
-                    print(f"\r{Fore.RED+Style.BRIGHT}[ Reff Balance ] : Gagal mengklaim saldo ref", flush=True)
+                    # Periksa apakah 'canClaimAt' ada sebelum mengaksesnya
+                    can_claim_at = friend_balance.get('canClaimAt')
+                    if can_claim_at:
+                        claim_time = datetime.datetime.fromtimestamp(int(can_claim_at) / 1000)
+                        current_time = datetime.datetime.now()
+                        time_diff = claim_time - current_time
+                        hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
+                        minutes, seconds = divmod(remainder, 60)
+                        print(f"{Fore.RED+Style.BRIGHT}\r[ Reff Balance ] : Klaim pada {hours} jam {minutes} menit lagi", flush=True)
+                    else:
+                        print(f"{Fore.RED+Style.BRIGHT}\r[ Reff Balance ] : False                                 ", flush=True)
             else:
-                # Periksa apakah 'canClaimAt' ada sebelum mengaksesnya
-                can_claim_at = friend_balance.get('canClaimAt')
-                if can_claim_at:
-                    claim_time = datetime.datetime.fromtimestamp(int(can_claim_at) / 1000)
-                    current_time = datetime.datetime.now()
-                    time_diff = claim_time - current_time
-                    hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
-                    minutes, seconds = divmod(remainder, 60)
-                    print(f"{Fore.RED+Style.BRIGHT}\r[ Reff Balance ] : Klaim pada {hours} jam {minutes} menit lagi", flush=True)
-                else:
-                    print(f"{Fore.RED+Style.BRIGHT}\r[ Reff Balance ] : False                                 ", flush=True)
+                print(f"{Fore.RED+Style.BRIGHT}\r[ Reff Balance ] : Gagal cek reff balance", flush=True)
         else:
-            print(f"{Fore.RED+Style.BRIGHT}\r[ Reff Balance ] : Gagal cek reff balance", flush=True)
+            print(f"\r{Fore.YELLOW+Style.BRIGHT}[ Reff Balance ] : Skipped !                    ", flush=True)
         available_colors = [Fore.RED, Fore.GREEN, Fore.YELLOW, Fore.BLUE, Fore.MAGENTA, Fore.CYAN]
 
         while balance_info['playPasses'] > 0:
@@ -566,7 +609,7 @@ while True:
     print(f"\n{Fore.GREEN+Style.BRIGHT}========={Fore.WHITE+Style.BRIGHT}Semua akun berhasil di proses{Fore.GREEN+Style.BRIGHT}=========", end="", flush=True)
     print(f"\r\n\n{Fore.GREEN+Style.BRIGHT}Refreshing token...", end="", flush=True)
     import sys
-    waktu_tunggu = 300  # 5 menit dalam detik
+    waktu_tunggu = 1  # 5 menit dalam detik
     for detik in range(waktu_tunggu, 0, -1):
         sys.stdout.write(f"\r{Fore.CYAN}Menunggu waktu claim berikutnya dalam {Fore.CYAN}{Fore.WHITE}{detik // 60} menit {Fore.WHITE}{detik % 60} detik")
         sys.stdout.flush()
