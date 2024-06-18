@@ -1,6 +1,6 @@
+# -*- coding: utf-8 -*-
 # Made with ❤ by @adearman
 # Join tele channel for update t.me/ghalibie
-# -*- coding: utf-8 -*-
 import argparse
 import random
 import requests
