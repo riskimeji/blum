@@ -568,26 +568,26 @@ while True:
             print(f"\r{Fore.CYAN+Style.BRIGHT}[ Play Game ] : Checking game...", end="", flush=True)
             time.sleep(1)
             claim_response = claim_game(token, game_response['gameId'], 2000)
-            if claim_response is None:
-                print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Gagal mengklaim game, mencoba lagi...", flush=True)
-            while True:
-                if claim_response.text == '{"message":"game session not finished"}':
-                    time.sleep(1)  # Tunggu sebentar sebelum mencoba lagi
-                    random_color = random.choice(available_colors)
-                    print(f"\r{random_color+Style.BRIGHT}[ Play Game ] : Game belum selesai.. mencoba lagi", flush=True)
-                    claim_response = claim_game(token, game_response['gameId'], 2000)
-                    if claim_response is None:
-                        print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Gagal mengklaim game, mencoba lagi...", flush=True)
-                elif claim_response.text == '{"message":"game session not found"}':
-                    print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Game sudah berakhir", flush=True)
-                    break
-                elif 'message' in claim_response and claim_response['message'] == 'Token is invalid':
-                    print(f"{Fore.RED+Style.BRIGHT}[ Play Game ] : Token tidak valid, mendapatkan token baru...")
-                    token = get_new_token(query_id)  # Asumsi query_id tersedia di scope ini
-                    continue  # Kembali ke awal loop untuk mencoba lagi dengan token baru
-                else:
-                    print(f"\r{Fore.YELLOW+Style.BRIGHT}[ Play Game ] : Game selesai: {claim_response.text}", flush=True)
-                    break
+            # if claim_response is None:
+            #     print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Gagal mengklaim game, mencoba lagi...", flush=True)
+            # while True:
+            #     if claim_response.text == '{"message":"game session not finished"}':
+            #         time.sleep(1)  # Tunggu sebentar sebelum mencoba lagi
+            #         random_color = random.choice(available_colors)
+            #         print(f"\r{random_color+Style.BRIGHT}[ Play Game ] : Game belum selesai.. mencoba lagi", flush=True)
+            #         claim_response = claim_game(token, game_response['gameId'], 2000)
+            #         if claim_response is None:
+            #             print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Gagal mengklaim game, mencoba lagi...", flush=True)
+            #     elif claim_response.text == '{"message":"game session not found"}':
+            #         print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Game sudah berakhir", flush=True)
+            #         break
+            #     elif 'message' in claim_response and claim_response['message'] == 'Token is invalid':
+            #         print(f"{Fore.RED+Style.BRIGHT}[ Play Game ] : Token tidak valid, mendapatkan token baru...")
+            #         token = get_new_token(query_id)  # Asumsi query_id tersedia di scope ini
+            #         continue  # Kembali ke awal loop untuk mencoba lagi dengan token baru
+            #     else:
+            #         print(f"\r{Fore.YELLOW+Style.BRIGHT}[ Play Game ] : Game selesai: {claim_response.text}", flush=True)
+            #         break
             # Setelah klaim game, cek lagi jumlah tiket
             balance_info = get_balance(token) 
             if balance_info is None: # Refresh informasi saldo untuk mendapatkan tiket terbaru
