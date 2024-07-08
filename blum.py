@@ -567,7 +567,7 @@ while True:
             game_response = play_game(token)
             print(f"\r{Fore.CYAN+Style.BRIGHT}[ Play Game ] : Checking game...", end="", flush=True)
             time.sleep(1)
-            claim_response = claim_game(token, game_response['gameId'], 2000)
+            # claim_response = claim_game(token, game_response['gameId'], 2000)
             # if claim_response is None:
             #     print(f"\r{Fore.RED+Style.BRIGHT}[ Play Game ] : Gagal mengklaim game, mencoba lagi...", flush=True)
             # while True:
